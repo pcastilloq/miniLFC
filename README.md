@@ -5,4 +5,4 @@ Mini Channel Liner Fresnel Collector
 
 hola :) 
 
-en contrucción
+en construcción
