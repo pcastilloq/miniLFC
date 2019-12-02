@@ -104,10 +104,10 @@ class MiniLFCColector:
     ##Angulo de inclinacion de los espejos para un theta del sol        
     def anguloRefleccion(self, theta_sol):
         self.theta_sol = np.radians(theta_sol)
-        N = np.shape(self.theta)
+        N = self.N_m
         j = self.theta_sol
         gamma = np.zeros(N)
-        for i in range(N[0]):
+        for i in range(N):
             O = self.theta[i]
             beta = O - np.pi/2 + j
             n = O - beta/2
@@ -122,7 +122,7 @@ class MiniLFCColector:
         self.w_port  = w_port
         self.h_port  = h_port
         self.e_mc    = e
-        self.N_port  = np.round((w_tot - e)/(w_port + e))          #Numero de puertos 
+        self.N_port  = np.round((w_tot - e)/(w_port + e))#Numero de puertos 
         self.P_port  = 2*(w_port + h_port)               #Perimetro minicanal
         self.A_trans = self.P_port*e                     #Area transversal de conduccion
         self.A_port  = w_port*h_port                     #Area transversal de conveccion
@@ -130,7 +130,7 @@ class MiniLFCColector:
 
 
 
-    def setup(self, W, w_m, N_m, alt_col, L, coord_recep, theta_sol, dim_abs, origen_abs, w_port, h_port, e_mc):
+    def construccion(self, W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc, theta_sol = 0):
         self.posicionEspejos(W, w_m, N_m, alt_col, L)
         self.GeometriaReceptor(coord_recep)
         self.anguloRefleccion(theta_sol)
@@ -154,7 +154,9 @@ class MiniLFCColector:
         lados = self.lados
         
         #Maxima altura emision de rayos
-        max_alt_cielo = (alt_cielo + W*(np.cos(theta_sol)*np.sin(theta_sol)))
+        max_alt_cielo = (alt_cielo + W*(np.cos(theta_sol)*np.sin(theta_sol)))*1.5
+        
+        self.max_alt_cielo = max_alt_cielo
         
         #Lista con la lista de las 4+1 esquinas de cada espejo
         XY_mir = []
@@ -275,7 +277,7 @@ class MiniLFCColector:
                 alpha = 1
                 rho = 0
                 tau = 0
-                x1, y1, x2, y2 = [-W*0.8, max_alt_cielo, W*0.8, max_alt_cielo]
+                x1, y1, x2, y2 = [-W*0.8, max_alt_cielo*1.2, W*0.8, max_alt_cielo*1.2]
                 
             surface["surf_{0}".format(x)] = rt.Superficie(alpha, rho, tau)
             surface["surf_" + str(x)].posicion(x1, y1, x2, y2)
@@ -285,12 +287,13 @@ class MiniLFCColector:
 
     ####Comentar/Descomentar para plotear rayos####
 
-    def plotColector(self):
+    def plotColector(self, rayos = 300):
 
         fig = plt.figure()
         for key in self.surface:
             plt.plot(self.surface[key].xplot, self.surface[key].yplot)
-  
+
+        
         plt.show()    
         ### Ahora hay que hacer el raytracing
 
@@ -328,7 +331,7 @@ class MiniLFCColector:
  
 
 
-    def simulacionRaytraicing(self, rayos=300):
+    def simulacionRaytraicing(self, plot = "y", rayos=300):
         
         surface = self.surface
         
@@ -337,7 +340,7 @@ class MiniLFCColector:
         w_m = self.w_m
         theta_sol = self.theta_sol
         alt_cielo = self.height*1.1
-        
+        max_alt_cielo = self.max_alt_cielo
         
         amount = self.amount
         id0 = self.id0
@@ -399,17 +402,19 @@ class MiniLFCColector:
                 if xi == 10:
                     print (i, theta0, minimo)
                 
-#                ## Graficar rayos ##
-#                #limites para el grafico, up y don van de 0.0 a 10.0
-#                up = 10
-#                down = 0
-#                
-#                #plotear trozos de los rayos
-#                if i < N_ray*up/10 and i > N_ray*down/10:
-#                    plt.plot([x0, xi], [y0, yi], color = (1.0 - (i/N_ray)*0.8, 0.2, 0.3 + (i/N_ray)*0.6))
-#                    plt.axis('equal')
-#                    plt.xlim(-4, 4)
-#                    plt.ylim(-0.3, max_alt_cielo)
+                ## Graficar rayos ##
+                #limites para el grafico, up y don van de 0.0 a 10.0
+                if plot == "y":
+                
+                    up = 10
+                    down = 0
+                    
+                    #plotear trozos de los rayos
+                    if i < N_ray*up/10 and i > N_ray*down/10:
+                        plt.plot([x0, xi], [y0, yi], color = (1.0 - (i/N_ray)*0.8, 0.2, 0.3 + (i/N_ray)*0.6))
+                        plt.axis('equal')
+                        plt.xlim(-4, 4)
+                        plt.ylim(-0.3, max_alt_cielo)
                 
                 #Luego se calcula la posicion inicial y angulo del rayo
                 x0, y0, theta0 = surface['surf_'+ str(body_int)].reflection(L2, theta0, xi, yi)
@@ -448,6 +453,16 @@ class MiniLFCColector:
         self.intercept_factor = ray_interc
         self.surfaces = surface
         self.x_y_pos = x_y_pos      
+
+        if plot == "y":
+            for key in self.surface:
+                plt.plot(self.surface[key].xplot, self.surface[key].yplot)
+                plt.axis('equal')
+                plt.xlim(-4, 4)
+                plt.ylim(-0.3, max_alt_cielo*1.4)
+                
+
+
 
 ####____Funciones Termicas_____####
 
@@ -781,8 +796,14 @@ class MiniLFCColector:
         return eficiencia, T_fl, x, coef_trans, h
 
 
-    def simulacion(self, corr="gungar"):
-        self.simulacionRaytraicing()
+    def simulacion(self, theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar"):
+        #Se ajustan los espejos
+        self.rotacionEspejos(theta_sol)
+        #Luego se simulan los rayos
+        self.simulacionRaytraicing(plot)
+        #Se setean las condiciones iniciales
+        self.CondInicial(DNI, v_wind, T_amb, T_in, P_in, m_in)
+        #por ultimo se simula la parte termica
         eficiencia, T_fl, x, coef_trans, h = self.simulacion_thermal(corr)
 
         return eficiencia, T_fl, x, coef_trans, h
@@ -820,7 +841,6 @@ e_mc    = 0.3/1000        #espesor de minicanales. Metro
 
 ## Todo lo de arriba es fijo
 
-
 #Condiciones de operación
 DNI = 900              #Radiacion Solar[W/m2]
 v_wind = 7              #Velocidad del viento [m/s]
@@ -834,22 +854,22 @@ T_in = 273.15 + 90
 
 
 #Angulo del sol
-theta_sol = 0           #Angulo del sol en grados, donde 0° es el mediodia solar
+theta_sol = 10           #Angulo del sol en grados, donde 0° es el mediodia solar
 
 #%%
 #Colector
 colector = MiniLFCColector()
 #Separar el angulo del sol
 
-colector.setup(W, w_m, N_m, alt_col, L, coord_recep, theta_sol, dim_abs, origen_abs, w_port, h_port, e_mc)
+colector.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
 
 #colector.CondInicial(DNI, v_wind, T_amb, T_in, P_in, m_in*0.8)
 
-#eff, T_f, x_f, h_transf, h = colector.simulacion()
+eff, T_f, x_f, h_transf, h = colector.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar")
 
-colector.plotColector()
+#colector.plotColector()
 
 #%%
 
-colector.rotacionEspejos(45)
-colector.plotColector()
+#colector.rotacionEspejos(45)
+#colector.plotColector()
