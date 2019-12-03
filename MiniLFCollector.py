@@ -174,7 +174,7 @@ class MiniLFCollector:
             
             XY_mir.append([x_mir, y_mir])
         
-        for i in range(len(colector.receptor)-1):
+        for i in range(len(self.receptor)-1):
             X1 = self.receptor[i]
             X2 = self.receptor[i+1]
             x_rec, y_rec = rt.polygon(1, X1, X2, 0.01, 'down')
@@ -426,7 +426,7 @@ class MiniLFCollector:
         
         
         #Calcular el factor de interceptacion
-        index_abs = (N_m + (len(colector.receptor)-1))*4 + 1
+        index_abs = (N_m + (len(self.receptor)-1))*4 + 1
         x_y_pos=[]
         
         if id0 == 0:
@@ -440,7 +440,7 @@ class MiniLFCollector:
         elif id0 == 1:
             ray_int = 0
             for i in range(amount*lados):
-                index = (N_m + (len(colector.receptor)-1))*4 + 1
+                index = (N_m + (len(self.receptor)-1))*4 + 1
                 ray_int += surface['surf_' + str(index+i)].ray_abs
                 x_y_pos.append(surface['surf_'+str(index+i)].intercept)
                 
