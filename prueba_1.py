@@ -5,8 +5,7 @@ Created on Mon Dec  2 22:45:18 2019
 @author: pcast
 """
 import numpy as np
-import MiniLFCollector as mlfc
-
+import MiniLFCollector as mLFC
 
 
 #%%   Creacion del objeto Colector
@@ -32,15 +31,17 @@ coord_recep = np.array([p1,p2,p3,p4])
 
 #Descripción de Absorbedor
 #tomando como referencia el 0,0 en el punto medio del lado inferior del receptor
-dim_abs = 360           #dimension: ancho en caso de placa, radio del tubo. dimension en mm.
+dim_abs = 360                       #dimension: ancho en caso de placa, radio del tubo. dimension en mm.
 origen_abs = np.array([[0,100]])    #arreglo con origen de los absorbedores 
+
 #Thermal geometry
-w_port  = 2.5/1000        #Ancho de minicanales. Metro
-h_port  = 2/1000        #Altura de minicanales. Metro
-e_mc    = 0.3/1000        #espesor de minicanales. Metro
+w_port  = 2.5/1000                  #Ancho de minicanales. Metro
+h_port  = 2/1000            #Altura de minicanales. Metro
+e_mc    = 0.3/1000           #espesor de minicanales. Metro
 
 
-## Todo lo de arriba es fijo
+## Todo lo de arriba es fijo. Diseño. 
+
 
 #Condiciones de operación
 DNI = 900              #Radiacion Solar[W/m2]
@@ -59,13 +60,9 @@ theta_sol = 10           #Angulo del sol en grados, donde 0° es el mediodia sol
 
 #%%
 #Colector
-colector = mlfc.MiniLFCollector()
-#Separar el angulo del sol
+colector = mLFC.MiniLFCollector()
 
 colector.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
 
-#colector.CondInicial(DNI, v_wind, T_amb, T_in, P_in, m_in*0.8)
-
 eff, T_f, x_f, h_transf, h = colector.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar")
 
-#colector.plotColector()
