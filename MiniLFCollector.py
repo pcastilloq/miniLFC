@@ -44,6 +44,7 @@ class MiniLFCollector:
         self.ancho = W
         self.largo = L
         self.N_m = N_m
+        self.prueba = 'hola'
     
     #Luego el receptor trapezoidal
     def GeometriaReceptor(self, coord):
