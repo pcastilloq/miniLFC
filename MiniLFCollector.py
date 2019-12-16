@@ -44,7 +44,7 @@ class MiniLFCollector:
         self.ancho = W
         self.largo = L
         self.N_m = N_m
-        self.prueba = 'hola'
+
     
     #Luego el receptor trapezoidal
     def GeometriaReceptor(self, coord):
@@ -542,7 +542,7 @@ class MiniLFCollector:
         
         
     #two-phase flow    
-        if x < 0.001:
+        if x < 0.0001:
             pass
         elif x < 0.99:
                 h_lo = self.h_trans
@@ -605,7 +605,31 @@ class MiniLFCollector:
         return h
 
 
-    def simulacion_thermal(self, corr ,N = 50):
+    def PressureLoss(Re, x, L, D, rho_l rho_v, G, sigma_l):
+        
+        if x < 0.00001:
+            if Re > 2000:
+                f = 0.079/Re**0.25
+            else:
+                f = 16/Re
+            
+            dP_fric = 4*f*(L/D)*(G**2)/(2*rho_l) 
+        
+        elif x < 1:
+            
+            #Steiner's void fraction 
+            alf = (x/rho_v)*((1 + 0.12*(1-x))*(x/rho_v + (1-x)/rho_l) + 
+                   (1.18*(1-x)*(9.8*sigma_l*(rho_l - rho_v))**0.25)/(G*rho_l**0.5))
+            
+            ## llamar a self, para ocupar los datos de entrada y salida del tramo
+            
+        
+        
+        
+        pass
+
+
+    def simulacion_thermal(self, corr, N = 50):
         
         #Geometria y C.Inicial heredadas
         w_tot = self.dim_abs
@@ -627,7 +651,7 @@ class MiniLFCollector:
         #Resolucion de discretizado
         #Cantidad de subdivisiones en el largo
         
-        A_dif = w_tot*(L/N)/1000             #Area diferencial
+        A_dif = w_tot*(L/N)/1000             #Area diferencial, w_tot ancho del absorbedor en mm
         
         #Vector de temperaturas y variables
         T_fl = np.zeros(N+1)
@@ -636,11 +660,12 @@ class MiniLFCollector:
         T_cov = np.zeros(N+1)
         x = np.zeros(N+1)
         h = np.zeros(N+1)
+        P = np.zeros(N+1)
         Q_u = np.zeros(N)
         coef_trans = np.zeros(N)
         
         #Temporal. Propiedades del Aire
-        k_air =  0.03299              #conductividad
+        k_air =  0.03299              #conductividad %%CAMBIAR CON COOLPROP
     
     
         #Propiedades del absorbedor
@@ -654,7 +679,7 @@ class MiniLFCollector:
         rho_cov = 0.08              #reflectividad del vidrio
         
         trans = tau_cov*a_cu/(1-(1-a_cu)*rho_cov)           #transmision del vidrio y absorcion
-        sigma = 5.6*np.float_power(10,(-8))     # Constante de Stefan-Boltzmann. [W/m2K4]
+        sigma = 5.6*np.float_power(10,(-8))                 # Constante de Stefan-Boltzmann. [W/m2K4]
         
         #Integradores de Calor
         Q_loss_amb_t= 0
@@ -668,6 +693,7 @@ class MiniLFCollector:
         T_cov[0]= T_amb + (T_in-273)    #temperatura del cover (vidrio)
         x[0] = x_0
         h[0] = h_0
+        P[0] = self.P_in
         
         
         #Iteracion
@@ -676,7 +702,7 @@ class MiniLFCollector:
         #    if x[z] > 0:
         #        est_ini = IAPWS(x=x[z], P=P_in)
         #    else:
-            est_ini = IAPWS(T=T_fl[z], P= self.P_in)          #Estado liquido del tramo
+            est_ini = IAPWS(T=T_fl[z], P = P[z])          #Estado liquido del tramo
             h_in = h[z]
             k = est_ini.k
             Pr = est_ini.Prandt
@@ -684,7 +710,7 @@ class MiniLFCollector:
                 self.Re = G*D_h/est_ini.mu
                 
             h_f = h_in + (Q_in/self.m_in)/1000               #Entalpia estimada final del tramo
-            est_out_o = IAPWS(P=self.P_in, h=h_f)            #Estado estimado final del tramo 1 
+            est_out_o = IAPWS(P = P[z], h=h_f)            #Estado estimado final del tramo 1 
         
             T_a = T_amb
             h_a = IAPWS(T=T_a, x = 0).h
@@ -694,7 +720,7 @@ class MiniLFCollector:
         #Aunque se puede resolver de forma analitica, mejor aplicar directamente la biseccion. 
             T_c = (T_b + T_a)/2.0
             h_c = (h_b + h_a)/2.0
-            st_l = IAPWS(P = self.P_in, x = 0)
+            st_l = IAPWS(P = P[z], x = 0)
             st_v = IAPWS(T=T_fl[z], x = 1)
             h_lv = (st_v.h - st_l.h)*1000                                               #Temperatura media
             h_trans = self.CoefTrans(Pr, k, x[z], st_v.rho, st_l.rho, Q_in/A_dif, G, h_lv, self.P_in, corr)        
@@ -719,11 +745,11 @@ class MiniLFCollector:
                 Q_conv_air = h_air_o*(T_p_ext_o - T_cov_o)*A_dif
                 Q_rad_air = sigma*(np.float_power(T_p_ext_o,4) - np.float_power(T_cov_o,4))*A_dif/((1/eps_cov)+(1/eps_abs)-1)
                 
-                 #Calor que cede hacía adelante y atras
+                #Calor que cede el minicanal hacía adelante y atras 
                 Q_cond_z1 = (T_p_ext_o - T_p_ext[z])*k_cu*A_trans*N_port/(L/N)
                 
                 if z == 0:
-                    Q_cond_z0 = 0
+                    Q_cond_z0 = 0 #El primer nodo no transmite hacia atras
                 else:
                     Q_cond_z0 = (T_p_ext[z] - T_p_ext[z-1])*k_cu*A_trans*N_port/(L/N)
                     
@@ -747,7 +773,7 @@ class MiniLFCollector:
                     h_b = h_c                       #Cover y Absorbedor estan "caliente". Luego solucion debe estar a menos Tº
     
                 h_c = (h_a + h_b)/2.0
-                est_out_2= IAPWS(h = h_c, P = self.P_in)
+                est_out_2 = IAPWS(h = h_c, P = P[z])
                 T_c = est_out_2.T
                 x_f_2 = est_out_2.x
         #        print('La calidad del vapor es', x_f_2)
@@ -770,6 +796,11 @@ class MiniLFCollector:
                 h_rad_air = sigma*(np.float_power(T_p_ext_o,2) + np.float_power(T_cov_o,2))*(T_p_ext_o + T_cov_o)/((1/eps_cov)+(1/eps_abs)-1)
                 T_cov_o = (Q_in*(1-trans) + ((self.h_wind+h_rad_amb)*T_amb + (h_air_o+h_rad_air)*T_p_ext_o)*A_dif)/((self.h_wind + h_air_o + h_rad_amb + h_rad_air)*A_dif)
         #        print ('La temperatura del vidrio es ', T_cov_o)
+            
+            
+        
+            
+            
             Q_u[z] = Q_cu_0    
             T_fl[z+1] = T_c
             T_p_ext[z+1]=T_p_ext_o
