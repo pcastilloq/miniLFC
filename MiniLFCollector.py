@@ -119,7 +119,7 @@ class MiniLFCollector:
 
 
     def GeometriaMinicanal(self, w_port, h_port, e):
-        w_tot        = self.dim_abs                      #Ancho total de la placa
+        w_tot        = self.dim_abs/1000                      #Ancho total de la placa
         self.w_port  = w_port
         self.h_port  = h_port
         self.e_mc    = e
@@ -770,10 +770,10 @@ class MiniLFCollector:
             dP_1 = 1
             i = 0
             
-            while abs(dP_1 - dP_0) > (0.1/N):
+            while abs(dP_1 - dP_0) > (0.01/N):
                 
                 P_1 = P[z] - dP_0/1e5
-                print (z)
+                #print (z)
                 
                 while (h_b - h_a) > (0.01/N):
                     #Perdida de calor del cover al ambiente
@@ -849,7 +849,6 @@ class MiniLFCollector:
                 else:
                     dP_0 = dP_1
                     dP_1 = 1
-                    i = i+1
 
         
             Q_u[z] = Q_cu_0    

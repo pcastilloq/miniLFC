@@ -16,7 +16,7 @@ W = 5.4
 N_m = 11
 w_m = 0.40
 alt_col = 3.9
-L = 12
+L = 1.81
 
 
 #Diseño receptor
@@ -45,13 +45,13 @@ e_mc    = 0.3/1000           #espesor de minicanales. Metro
 
 #Condiciones de operación
 DNI = 900              #Radiacion Solar[W/m2]
-v_wind = 7              #Velocidad del viento [m/s]
+v_wind = 5              #Velocidad del viento [m/s]
 T_amb = 273.15 + 30     #Temp. ambiente
 
 #.......Condiciones de Operación
 #Condiciones de Entrada
 P_in = 0.2        #Presion entrada [MPa] 
-m_in = 0.2    # equivalente a Re=2300   0.07 = 250
+m_in = 0.139*2    #0.139 equivale a 218 kg/m2s
 T_in = 273.15 + 90
 
 
@@ -65,5 +65,5 @@ colector_1 = mLFC.MiniLFCollector()
 colector_1.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
 
 
-eff, T_f, x_f, h_transf, h, P = colector_1.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar")
+eff, T_f, x_f, h_transf, h, P = colector_1.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "n", corr="gungar")
 
