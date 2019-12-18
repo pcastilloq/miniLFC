@@ -604,30 +604,60 @@ class MiniLFCollector:
         
         return h
 
+    def voidFraction(self, x, rhov, rhol, sigma, G):
+        
+        alpha = (x/rhov)*((1 + 0.12*(1 - x))*(x/rhov + (1 - x)/rhol) + (1.18*(1-x)*(9.8*sigma*(rhol - rhov))**0.25)/(G*rhol**0.5) )
+        #print("alpha= " + str(alpha))
+        return alpha
 
-    def PressureLoss(Re, x, L, D, rho_l rho_v, G, sigma_l):
+    
+    def momentum(self, x, rhol, rhov, alpha):
         
-        if x < 0.00001:
-            if Re > 2000:
-                f = 0.079/Re**0.25
-            else:
-                f = 16/Re
-            
-            dP_fric = 4*f*(L/D)*(G**2)/(2*rho_l) 
+        if x == 0:
+            result = 0
+        else:
+            result = (((1 - x)**2)/(rhol*(1 - alpha)) + (x**2)/(rhov*alpha))*(x > 0) + 0
         
-        elif x < 1:
-            
-            #Steiner's void fraction 
-            alf = (x/rho_v)*((1 + 0.12*(1-x))*(x/rho_v + (1-x)/rho_l) + 
-                   (1.18*(1-x)*(9.8*sigma_l*(rho_l - rho_v))**0.25)/(G*rho_l**0.5))
-            
-            ## llamar a self, para ocupar los datos de entrada y salida del tramo
-            
-        
-        
-        
-        pass
+        #print ("momemtum= " + str(result))
+        return result
+    
 
+    def PressureLoss(self, x1, x0, L, D, sta_l, sta_v, G): #Requiero: x, G, Dh, st.out, st. v y st. l, x(z), x(z-1)
+        
+        mu_v = sta_v.mu
+        mu_l = sta_l.mu
+        
+        rho_v = sta_v.rho
+        rho_l = sta_l.rho
+        
+        Re_v = G*D/mu_v
+        Re_l = G*D/mu_l
+        
+        #Primero friccion loss
+        
+        f_l = (0.079/Re_l**0.25)*(Re_l > 1187) + (16/Re_l)*(Re_l < 1187)
+        f_v = (0.079/Re_v**0.25)*(Re_v > 1187) + (16/Re_v)*(Re_v < 1187)
+        
+        dP_l = (2*f_l*(L/D)*(G**2)/rho_l)*(x1 < 1)
+        dP_v = (2*f_v*(L/D)*(G**2)/rho_v)*(x1 > 0)
+        
+        Y = dP_l + 2*(dP_v - dP_l)*x1
+        dP_friction = Y*(1 - x1)**(1/3) + dP_v*x1**3
+        #Ahora momentum loss    
+    
+        a_in = self.voidFraction(x0, rho_v, rho_l, sta_l.sigma, G)
+        a_out = self.voidFraction(x1, rho_v, rho_l, sta_l.sigma, G)
+        
+        mom_in = self.momentum(x0, rho_l, rho_v, a_in)
+        mom_out = self.momentum(x1, rho_l, rho_v, a_out)
+        
+        dP_momentum = G**2*(mom_out - mom_in)*(x1 < 1)*(x0 > 0)
+        #print("dP_m= " + str(dP_momentum))
+        #por ultimo, se suman
+        
+        dP_total = dP_friction + dP_momentum
+        #print("dP_total= " + str(dP_total))
+        return dP_total
 
     def simulacion_thermal(self, corr, N = 50):
         
@@ -710,7 +740,7 @@ class MiniLFCollector:
                 self.Re = G*D_h/est_ini.mu
                 
             h_f = h_in + (Q_in/self.m_in)/1000               #Entalpia estimada final del tramo
-            est_out_o = IAPWS(P = P[z], h=h_f)            #Estado estimado final del tramo 1 
+            est_out_o = IAPWS(P = P[z], h=h_f)               #Estado estimado final del tramo 1 
         
             T_a = T_amb
             h_a = IAPWS(T=T_a, x = 0).h
@@ -736,71 +766,92 @@ class MiniLFCollector:
             
             T_cov_o = (Q_in*(1-trans) + (self.h_wind*T_amb + h_air_o*T_p_ext_o)*A_dif)/((self.h_wind + h_air_o)*A_dif)
             
-            while (h_b - h_a) > (0.01/N):
-                #Perdida de calor del cover al ambiente
-                Q_conv_amb = self.h_wind*(T_cov_o - T_amb)*A_dif
-                Q_rad_amb = eps_cov*sigma*(np.float_power(T_cov_o,4) - np.float_power(T_sky,4))*A_dif
+            dP_0 = 0
+            dP_1 = 1
+            i = 0
             
-                #Perdida de calor del absorbedor al cover
-                Q_conv_air = h_air_o*(T_p_ext_o - T_cov_o)*A_dif
-                Q_rad_air = sigma*(np.float_power(T_p_ext_o,4) - np.float_power(T_cov_o,4))*A_dif/((1/eps_cov)+(1/eps_abs)-1)
+            while abs(dP_1 - dP_0) > (0.1/N):
                 
-                #Calor que cede el minicanal hacía adelante y atras 
-                Q_cond_z1 = (T_p_ext_o - T_p_ext[z])*k_cu*A_trans*N_port/(L/N)
+                P_1 = P[z] - dP_0/1e5
+                print (z)
                 
-                if z == 0:
-                    Q_cond_z0 = 0 #El primer nodo no transmite hacia atras
+                while (h_b - h_a) > (0.01/N):
+                    #Perdida de calor del cover al ambiente
+                    Q_conv_amb = self.h_wind*(T_cov_o - T_amb)*A_dif
+                    Q_rad_amb = eps_cov*sigma*(np.float_power(T_cov_o,4) - np.float_power(T_sky,4))*A_dif
+                
+                    #Perdida de calor del absorbedor al cover
+                    Q_conv_air = h_air_o*(T_p_ext_o - T_cov_o)*A_dif
+                    Q_rad_air = sigma*(np.float_power(T_p_ext_o,4) - np.float_power(T_cov_o,4))*A_dif/((1/eps_cov)+(1/eps_abs)-1)
+                    
+                    #Calor que cede el minicanal hacía adelante y atras 
+                    Q_cond_z1 = (T_p_ext_o - T_p_ext[z])*k_cu*A_trans*N_port/(L/N)
+                    
+                    if z == 0:
+                        Q_cond_z0 = 0 #El primer nodo no transmite hacia atras
+                    else:
+                        Q_cond_z0 = (T_p_ext[z] - T_p_ext[z-1])*k_cu*A_trans*N_port/(L/N)
+                        
+                    #Calor que absorbe el absorbedor
+                    Q_abs = Q_in*trans
+                    Q_cu_0 = Q_abs - Q_conv_air - Q_rad_air + Q_cond_z0 - Q_cond_z1 
+                    
+                    #Q_loss = Q_conv_amb + Q_rad_amb - (Q_conv_air + Q_rad_air)           
+                
+                    h_out_1 = h[z] + (Q_cu_0/m_in)/1000
+                    
+                    if h_out_1 - h_c == 0: 
+                        T_fl[z+1] = T_c
+                        h[z+1] = h_c
+                        x[z+1] = IAPWS(h=h_c, P= P_1).x
+                        
+                    elif  h_out_1 - h_c > 0:     #Cover y Absorbedor estan "helados". Luego solucion debe estar a mas Tº  
+                        h_a = h_c                   #modificar esto 
+                        
+                    else: 
+                        h_b = h_c                       #Cover y Absorbedor estan "caliente". Luego solucion debe estar a menos Tº
+        
+                    h_c = (h_a + h_b)/2.0
+                    #print(z, h_c)
+                    est_out_2 = IAPWS(h = h_c, P = P_1)
+                    T_c = est_out_2.T
+                    x_f_2 = est_out_2.x
+            #        print('La calidad del vapor es', x_f_2)
+                    st_l = IAPWS(P=P_1, x = 0)
+                    st_v = IAPWS(T=T_c, x = 1)
+                    h_lv = (st_v.h - st_l.h)*1000
+                    h_trans = self.CoefTrans(Pr, k, x[z], st_v.rho, st_l.rho, Q_in/A_dif, G, h_lv, st_l.sigma, corr)
+                
+            #            print ('El coef transfer es ',h_kan)
+                    R_fl = 1/(h_trans*P_port*(L/N)*N_port)              #Resistencia flujo
+                    R_t = R_cu + R_fl                                   #Resistencia total
+                        
+                    T_p_ext_o = Q_cu_0*R_t  + T_c
+            #        print ('La temperatura externa es ', T_p_ext_o)
+                    T_p_int_o = T_p_ext_o - Q_cu_0*R_cu
+                    Ra_1 = abs(self.Ra(T_p_ext_o, T_cov_o, e_cov))
+                    h_air_o = self.CoefTransAir(Ra_1, k_air, e_cov)
+            
+                    h_rad_amb = eps_cov*sigma*(np.float_power(T_cov_o,2) + np.float_power(T_sky,2))*(T_cov_o + T_sky)
+                    h_rad_air = sigma*(np.float_power(T_p_ext_o,2) + np.float_power(T_cov_o,2))*(T_p_ext_o + T_cov_o)/((1/eps_cov)+(1/eps_abs)-1)
+                    T_cov_o = (Q_in*(1-trans) + ((self.h_wind+h_rad_amb)*T_amb + (h_air_o+h_rad_air)*T_p_ext_o)*A_dif)/((self.h_wind + h_air_o + h_rad_amb + h_rad_air)*A_dif)
+            #        print ('La temperatura del vidrio es ', T_cov_o)
+            
+            #Calcular perdida de carga. Requiero: x, G, Dh, st.out, st. v y st. l, x(z), x(z-1)
+
+                dP_1 = self.PressureLoss(x_f_2, x[z], (L/N), D_h, st_l, st_v, G)
+                #print("dP_1= " + str(dP_1))
+                #print (i, dP_0, dP_1)
+                
+                if dP_1 == dP_0:
+                    P[z+1] = P_1
+                    
                 else:
-                    Q_cond_z0 = (T_p_ext[z] - T_p_ext[z-1])*k_cu*A_trans*N_port/(L/N)
-                    
-                #Calor que absorbe el absorbedor
-                Q_abs = Q_in*trans
-                Q_cu_0 = Q_abs - Q_conv_air - Q_rad_air + Q_cond_z0 - Q_cond_z1 
-                
-                #Q_loss = Q_conv_amb + Q_rad_amb - (Q_conv_air + Q_rad_air)           
-            
-                h_out_1 = h[z] + (Q_cu_0/m_in)/1000
-                
-                if h_out_1 - h_c == 0: 
-                    T_fl[z+1] = T_c
-                    h[z+1] = h_c
-                    x[z+1] = IAPWS(h=h_c, P= self.P_in).x
-                    
-                elif  h_out_1 - h_c > 0:     #Cover y Absorbedor estan "helados". Luego solucion debe estar a mas Tº  
-                    h_a = h_c                   #modificar esto 
-                    
-                else: 
-                    h_b = h_c                       #Cover y Absorbedor estan "caliente". Luego solucion debe estar a menos Tº
-    
-                h_c = (h_a + h_b)/2.0
-                est_out_2 = IAPWS(h = h_c, P = P[z])
-                T_c = est_out_2.T
-                x_f_2 = est_out_2.x
-        #        print('La calidad del vapor es', x_f_2)
-                st_l = IAPWS(P=self.P_in, x = 0)
-                st_v = IAPWS(T=T_c, x = 1)
-                h_lv = (st_v.h - st_l.h)*1000
-                h_trans = self.CoefTrans(Pr, k, x[z], st_v.rho, st_l.rho, Q_in/A_dif, G, h_lv, st_l.sigma, corr)
-            
-        #            print ('El coef transfer es ',h_kan)
-                R_fl = 1/(h_trans*P_port*(L/N)*N_port)              #Resistencia flujo
-                R_t = R_cu + R_fl                                   #Resistencia total
-                    
-                T_p_ext_o = Q_cu_0*R_t  + T_c
-        #        print ('La temperatura externa es ', T_p_ext_o)
-                T_p_int_o = T_p_ext_o - Q_cu_0*R_cu
-                Ra_1 = abs(self.Ra(T_p_ext_o, T_cov_o, e_cov))
-                h_air_o = self.CoefTransAir(Ra_1, k_air, e_cov)
+                    dP_0 = dP_1
+                    dP_1 = 1
+                    i = i+1
+
         
-                h_rad_amb = eps_cov*sigma*(np.float_power(T_cov_o,2) + np.float_power(T_sky,2))*(T_cov_o + T_sky)
-                h_rad_air = sigma*(np.float_power(T_p_ext_o,2) + np.float_power(T_cov_o,2))*(T_p_ext_o + T_cov_o)/((1/eps_cov)+(1/eps_abs)-1)
-                T_cov_o = (Q_in*(1-trans) + ((self.h_wind+h_rad_amb)*T_amb + (h_air_o+h_rad_air)*T_p_ext_o)*A_dif)/((self.h_wind + h_air_o + h_rad_amb + h_rad_air)*A_dif)
-        #        print ('La temperatura del vidrio es ', T_cov_o)
-            
-            
-        
-            
-            
             Q_u[z] = Q_cu_0    
             T_fl[z+1] = T_c
             T_p_ext[z+1]=T_p_ext_o
@@ -808,6 +859,7 @@ class MiniLFCollector:
             T_cov[z+1] = T_cov_o
             x[z+1] = x_f_2
             h[z+1] = h_c
+            P[z+1] = P_1
             coef_trans[z] = h_trans
             
             Q_loss_amb_t= Q_loss_amb_t + Q_conv_amb + Q_rad_amb
@@ -825,7 +877,7 @@ class MiniLFCollector:
         eficiencia = Q_util/(Q_in_o*L)
         print ('La eficiencia del concentrador es de', np.round((eficiencia*100),2), '%')
         
-        return eficiencia, T_fl, x, coef_trans, h
+        return eficiencia, T_fl, x, coef_trans, h, P
 
 
     def simulacion(self, theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar"):
@@ -836,6 +888,6 @@ class MiniLFCollector:
         #Se setean las condiciones iniciales
         self.CondInicial(DNI, v_wind, T_amb, T_in, P_in, m_in)
         #por ultimo se simula la parte termica
-        eficiencia, T_fl, x, coef_trans, h = self.simulacion_thermal(corr)
+        eficiencia, T_fl, x, coef_trans, h, P = self.simulacion_thermal(corr)
 
-        return eficiencia, T_fl, x, coef_trans, h
+        return eficiencia, T_fl, x, coef_trans, h, P

@@ -51,7 +51,7 @@ T_amb = 273.15 + 30     #Temp. ambiente
 #.......Condiciones de Operación
 #Condiciones de Entrada
 P_in = 0.2        #Presion entrada [MPa] 
-m_in = 0.1    # equivalente a Re=2300   0.07 = 250
+m_in = 0.2    # equivalente a Re=2300   0.07 = 250
 T_in = 273.15 + 90
 
 
@@ -65,5 +65,5 @@ colector_1 = mLFC.MiniLFCollector()
 colector_1.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
 
 
-eff, T_f, x_f, h_transf, h = colector_1.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar")
+eff, T_f, x_f, h_transf, h, P = colector_1.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar")
 
