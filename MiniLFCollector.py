@@ -5,6 +5,7 @@ Created on Thu Nov 21 15:29:41 2019
 @author: pablo
 """
 from iapws import IAPWS97 as IAPWS
+from CoolProp.CoolProp import PropsSI
 import numpy as np
 import matplotlib.pyplot as plt
 import Raytrace as rt
@@ -118,7 +119,11 @@ class MiniLFCollector:
 
 
     def GeometriaMinicanal(self, w_port, h_port, e):
+<<<<<<< Updated upstream
         w_tot        = self.dim_abs                      #Ancho total de la placa
+=======
+        w_tot        = self.dim_abs/1000                 #Ancho total de la placa
+>>>>>>> Stashed changes
         self.w_port  = w_port
         self.h_port  = h_port
         self.e_mc    = e
@@ -583,14 +588,15 @@ class MiniLFCollector:
     def Ra(self, T_h, T_c, L): #Numero de Rayleigh
         T_m = (T_h + T_c)/2.0
         g = 9.8
-        nu = 0.00001796         #viscosidad de cinematica. A 50ºC
-        a = 0.00002546         #difusividad termica. A 50ºC 
+        nu = PropsSI('V', 'P', 1e5, 'T', T_m, 'air') #viscosidad de cinematica. A t_m
+        a = PropsSI('L', 'P', 1e5, 'T', T_m, 'air')/PropsSI('D', 'P', 1e5, 'T', T_m, 'air')/PropsSI('CP0MASS', 'P', 1e5, 'T', T_m, 'air')        #difusividad termica. A 50ºC 
         Ra = g*(T_h - T_c)*np.float_power(L,3)/(nu*a*T_m)
         return Ra
 
 #Coef de transf de calor conveccion natural dentro de la cavidad
-    def CoefTransAir(self, Ra, k, L):
-        k = 0.028
+    def CoefTransAir(self, Ra, T_m, L):
+        k = PropsSI('L', 'P', 1e5, 'T', T_m, 'air')
+        
         if Ra < 10000:
             Nu = 1.95
         elif Ra < 400000:
@@ -603,6 +609,65 @@ class MiniLFCollector:
         
         return h
 
+<<<<<<< Updated upstream
+=======
+    def voidFraction(self, x, rhov, rhol, sigma, G):
+        
+        alpha = (x/rhov)*((1 + 0.12*(1 - x))*(x/rhov + (1 - x)/rhol) + (1.18*(1-x)*(9.8*sigma*(rhol - rhov))**0.25)/(G*rhol**0.5) )
+        #print("alpha= " + str(alpha))
+        return alpha
+
+    
+    def momentum(self, x, rhol, rhov, alpha):
+        
+        if x == 0:
+            result = 0
+        else:
+            result = (((1 - x)**2)/(rhol*(1 - alpha)) + (x**2)/(rhov*alpha))*(x > 0) + 0
+        
+        #print ("momemtum= " + str(result))
+        return result
+    
+
+    def PressureLoss(self, x1, x0, L, D, sta_l, sta_v, G): #Requiero: x, G, Dh, st.out, st. v y st. l, x(z), x(z-1)
+        
+        mu_v = sta_v.mu
+        mu_l = sta_l.mu
+        
+        rho_v = sta_v.rho
+        rho_l = sta_l.rho
+        
+        Re_v = G*D/mu_v
+        Re_l = G*D/mu_l
+        
+        lam_tur = 1187
+        
+        #Primero friccion loss
+        
+        f_l = (0.079/Re_l**0.25)*(Re_l > lam_tur) + (16/Re_l)*(Re_l < lam_tur)
+        f_v = (0.079/Re_v**0.25)*(Re_v > lam_tur) + (16/Re_v)*(Re_v < lam_tur)
+        
+        dP_l = (2*f_l*(L/D)*(G**2)/rho_l)*(x1 < 1)
+        dP_v = (2*f_v*(L/D)*(G**2)/rho_v)*(x1 > 0)
+        
+        Y = dP_l + 2*(dP_v - dP_l)*x1
+        dP_friction = Y*(1 - x1)**(1/3) + dP_v*x1**3
+        #Ahora momentum loss    
+    
+        a_in = self.voidFraction(x0, rho_v, rho_l, sta_l.sigma, G)
+        a_out = self.voidFraction(x1, rho_v, rho_l, sta_l.sigma, G)
+        
+        mom_in = self.momentum(x0, rho_l, rho_v, a_in)
+        mom_out = self.momentum(x1, rho_l, rho_v, a_out)
+        
+        dP_momentum = G**2*(mom_out - mom_in)*(x1 < 1)*(x0 > 0)
+        #print("dP_m= " + str(dP_momentum))
+        #por ultimo, se suman
+        
+        dP_total = dP_friction + dP_momentum
+        #print("dP_total= " + str(dP_total))
+        return dP_total
+>>>>>>> Stashed changes
 
     def simulacion_thermal(self, corr ,N = 50):
         
@@ -637,9 +702,12 @@ class MiniLFCollector:
         h = np.zeros(N+1)
         Q_u = np.zeros(N)
         coef_trans = np.zeros(N)
+<<<<<<< Updated upstream
         
         #Temporal. Propiedades del Aire
         k_air =  0.03299              #conductividad
+=======
+>>>>>>> Stashed changes
     
     
         #Propiedades del absorbedor
@@ -664,13 +732,14 @@ class MiniLFCollector:
         T_fl[0]= T_in                   #temperatura del fluido al inicio
         T_p_ext[0] = T_in               #temperatura de pared exterior
         T_p_int[0] = T_in               #temperatura de pared interior
-        T_cov[0]= T_amb + (T_in-273)    #temperatura del cover (vidrio)
+        T_cov[0]= T_in                  #temperatura del cover (vidrio)
         x[0] = x_0
         h[0] = h_0
         
         
         #Iteracion
         for z in range(N):
+            print (z)
             Q_in = Q_in_o*(L/N)   #Q_ingresa =  G_t * Area ext * delta Z
         #    if x[z] > 0:
         #        est_ini = IAPWS(x=x[z], P=P_in)
@@ -705,7 +774,7 @@ class MiniLFCollector:
             
             T_p_ext_o = Q_in*trans*R_t  + T_c                         #Temperatura tuberia exterior inicial
             Ra_o = 100000
-            h_air_o = self.CoefTransAir(Ra_o, k_air, e_cov)
+            h_air_o = self.CoefTransAir(Ra_o, T_c, e_cov)
             
             T_cov_o = (Q_in*(1-trans) + (self.h_wind*T_amb + h_air_o*T_p_ext_o)*A_dif)/((self.h_wind + h_air_o)*A_dif)
             
@@ -721,6 +790,7 @@ class MiniLFCollector:
                  #Calor que cede hacía adelante y atras
                 Q_cond_z1 = (T_p_ext_o - T_p_ext[z])*k_cu*A_trans*N_port/(L/N)
                 
+<<<<<<< Updated upstream
                 if z == 0:
                     Q_cond_z0 = 0
                 else:
@@ -731,6 +801,78 @@ class MiniLFCollector:
                 Q_cu_0 = Q_abs - Q_conv_air - Q_rad_air + Q_cond_z0 - Q_cond_z1 
                 
                 #Q_loss = Q_conv_amb + Q_rad_amb - (Q_conv_air + Q_rad_air)           
+=======
+                while (h_b - h_a) > (0.01/N):
+                    #Perdida de calor del cover al ambiente
+                    Q_conv_amb = self.h_wind*(T_cov_o - T_amb)*A_dif
+                    
+                    Q_rad_amb = eps_cov*sigma*(np.float_power(T_cov_o,4) - np.float_power(T_sky,4))*A_dif
+                
+                    #Perdida de calor del absorbedor al cover
+                    Q_conv_air = h_air_o*(T_p_ext_o - T_cov_o)*A_dif
+                    Q_rad_air = sigma*(np.float_power(T_p_ext_o,4) - np.float_power(T_cov_o,4))*A_dif/((1/eps_cov)+(1/eps_abs)-1)
+                    
+                    #Calor que cede el minicanal hacía adelante y atras 
+                    Q_cond_z1 = (T_p_ext_o - T_p_ext[z])*k_cu*A_trans*N_port/(L/N)
+                    
+                    if z == 0:
+                        Q_cond_z0 = 0 #El primer nodo no transmite hacia atras
+                    else:
+                        Q_cond_z0 = (T_p_ext[z] - T_p_ext[z-1])*k_cu*A_trans*N_port/(L/N)
+                        
+                    #Calor que absorbe el absorbedor
+                    Q_abs = Q_in*trans
+                    Q_cu_0 = Q_abs - Q_conv_air - Q_rad_air + Q_cond_z0 - Q_cond_z1 
+                    print ("el calor que absorbe es", Q_cu_0)
+                    #Q_loss = Q_conv_amb + Q_rad_amb - (Q_conv_air + Q_rad_air)           
+                
+                    h_out_1 = h[z] + (Q_cu_0/m_in)/1000
+                    
+                    if h_out_1 - h_c == 0: 
+                        T_fl[z+1] = T_c
+                        h[z+1] = h_c
+                        x[z+1] = IAPWS(h=h_c, P= P_1).x
+                        
+                    elif  h_out_1 - h_c > 0:     #Cover y Absorbedor estan "helados". Luego solucion debe estar a mas Tº  
+                        h_a = h_c                   #modificar esto 
+                        
+                    else: 
+                        h_b = h_c                       #Cover y Absorbedor estan "caliente". Luego solucion debe estar a menos Tº
+        
+                    h_c = (h_a + h_b)/2.0
+                    #print(z, h_c)
+                    est_out_2 = IAPWS(h = h_c, P = P_1)
+                    T_c = est_out_2.T
+                    x_f_2 = est_out_2.x
+            #        print('La calidad del vapor es', x_f_2)
+                    st_l = IAPWS(P=P_1, x = 0)
+                    st_v = IAPWS(T=T_c, x = 1)
+                    h_lv = (st_v.h - st_l.h)*1000
+                    h_trans = self.CoefTrans(Pr, k, x[z], st_v.rho, st_l.rho, Q_in/A_dif, G, h_lv, st_l.sigma, corr)
+                
+            #            print ('El coef transfer es ',h_kan)
+                    R_fl = 1/(h_trans*P_port*(L/N)*N_port)              #Resistencia flujo
+                    R_t = R_cu + R_fl                                   #Resistencia total
+                        
+                    T_p_ext_o = Q_cu_0*R_t  + T_c
+                    
+                    print ('La temperatura externa es ', T_p_ext_o)
+                    T_p_int_o = T_p_ext_o - Q_cu_0*R_cu
+                    
+                    print ('La temperatura interna es ', T_p_int_o)
+                    
+                    Ra_1 = self.Ra(T_p_ext_o, T_cov_o, e_cov)
+                    
+                    print('Numero de Rayleigh', Ra_1)
+                    
+                    
+                    h_air_o = self.CoefTransAir(Ra_1, (T_p_ext_o + T_cov_o)/2, e_cov)
+            
+                    h_rad_amb = eps_cov*sigma*(np.float_power(T_cov_o,2) + np.float_power(T_sky,2))*(T_cov_o + T_sky)
+                    h_rad_air = sigma*(np.float_power(T_p_ext_o,2) + np.float_power(T_cov_o,2))*(T_p_ext_o + T_cov_o)/((1/eps_cov)+(1/eps_abs)-1)
+                    T_cov_o = (Q_in*(1-trans) + ((self.h_wind+h_rad_amb)*T_amb + (h_air_o+h_rad_air)*T_p_ext_o)*A_dif)/((self.h_wind + h_air_o + h_rad_amb + h_rad_air)*A_dif)
+                    print ('La temperatura del vidrio es ', T_cov_o)
+>>>>>>> Stashed changes
             
                 h_out_1 = h[z] + (Q_cu_0/m_in)/1000
                 

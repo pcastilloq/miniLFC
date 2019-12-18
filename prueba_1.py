@@ -50,8 +50,13 @@ T_amb = 273.15 + 30     #Temp. ambiente
 
 #.......Condiciones de Operación
 #Condiciones de Entrada
+<<<<<<< Updated upstream
 P_in = 0.2        #Presion entrada [MPa] 
 m_in = 0.1    # equivalente a Re=2300   0.07 = 250
+=======
+P_in = 0.12        #Presion entrada [MPa] 
+m_in = 0.139/2    #0.139 equivale a 218 kg/m2s
+>>>>>>> Stashed changes
 T_in = 273.15 + 90
 
 
@@ -60,10 +65,14 @@ theta_sol = 10           #Angulo del sol en grados, donde 0° es el mediodia sol
 
 #%%
 #Colector
-colector_1 = mLFC.MiniLFCollector()
+cltr= mLFC.MiniLFCollector()
 
-colector_1.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
+cltr.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
 
 
+<<<<<<< Updated upstream
 eff, T_f, x_f, h_transf, h = colector_1.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar")
+=======
+eff, T_f, x_f, h_transf, h, P = cltr.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "n", corr="gungar")
+>>>>>>> Stashed changes
 
