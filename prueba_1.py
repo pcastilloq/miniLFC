@@ -50,8 +50,8 @@ T_amb = 273.15 + 30     #Temp. ambiente
 
 #.......Condiciones de Operación
 #Condiciones de Entrada
-P_in = 0.2        #Presion entrada [MPa] 
-m_in = 0.139*2    #0.139 equivale a 218 kg/m2s
+P_in = 0.1         #Presion entrada [MPa] 
+m_in = 0.139        #0.139 equivale a 218 kg/m2s
 T_in = 273.15 + 90
 
 
