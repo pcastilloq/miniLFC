@@ -118,7 +118,7 @@ class MiniLFCollector:
 
 
     def GeometriaMinicanal(self, w_port, h_port, e):
-        w_tot        = self.dim_abs                      #Ancho total de la placa
+        w_tot        = self.dim_abs/1000                      #Ancho total de la placa
         self.w_port  = w_port
         self.h_port  = h_port
         self.e_mc    = e

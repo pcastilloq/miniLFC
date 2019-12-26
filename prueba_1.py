@@ -60,10 +60,10 @@ theta_sol = 10           #Angulo del sol en grados, donde 0° es el mediodia sol
 
 #%%
 #Colector
-colector_1 = mLFC.MiniLFCollector()
+cltr_1 = mLFC.MiniLFCollector()
 
-colector_1.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
+cltr_1.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
 
 
-eff, T_f, x_f, h_transf, h = colector_1.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar")
+#eff, T_f, x_f, h_transf, h = colector_1.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar")
 
