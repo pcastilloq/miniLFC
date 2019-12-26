@@ -6,7 +6,8 @@ Created on Mon Dec  2 22:45:18 2019
 """
 import numpy as np
 import MiniLFCollector as mLFC
-
+import pvlib 
+import matplotlib.pyplot as plt
 
 #%%   Creacion del objeto Colector
     
@@ -67,3 +68,12 @@ cltr_1.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w
 
 #eff, T_f, x_f, h_transf, h = colector_1.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar")
 
+#%%
+
+tmy_scl = pvlib.iotools.read_tmy3('OK_SCL.csv')
+
+for i in range(tmy_scl[0].shape[0]):
+    
+    DNI = tmy_scl[0]['DNI'][i]
+    T_amb = tmy_scl[0]['DryBulb'][i]
+    v_wind = tmy_scl[0]['Wspd'][i]
