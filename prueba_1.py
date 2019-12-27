@@ -13,27 +13,27 @@ import matplotlib.pyplot as plt
     
 #Diseño concentrador
 #dimensiones en metros
-W = 5.4
+W = 7.5
 N_m = 11
-w_m = 0.40
-alt_col = 3.9
+w_m = 0.50
+alt_col = 4.5
 L = 12
 
 
 #Diseño receptor
 #Tomando como referencia el 0,0 en la esquina inf izq del receptor
 p1 = np.array([0, 0])
-p2 = np.array([40, 120])
+p2 = np.array([0.125*w_m*1000, 250])
 #p5 = np.array([5, 60])
-p3 = np.array([400, 120])
-p4 = np.array([440, 0])
+p3 = np.array([1.075*w_m*1000, 250])
+p4 = np.array([1.2*w_m*1000, 0])
 
 coord_recep = np.array([p1,p2,p3,p4])
 
 #Descripción de Absorbedor
 #tomando como referencia el 0,0 en el punto medio del lado inferior del receptor
-dim_abs = 360                       #dimension: ancho en caso de placa, radio del tubo. dimension en mm.
-origen_abs = np.array([[0,100]])    #arreglo con origen de los absorbedores 
+dim_abs = 470                       #dimension: ancho en caso de placa, radio del tubo. dimension en mm.
+origen_abs = np.array([[0,240]])    #arreglo con origen de los absorbedores 
 
 #Thermal geometry
 w_port  = 2.5/1000                  #Ancho de minicanales. Metro
@@ -57,23 +57,23 @@ T_in = 273.15 + 90
 
 
 #Angulo del sol
-theta_sol = 10           #Angulo del sol en grados, donde 0° es el mediodia solar
+theta_sol = 0           #Angulo del sol en grados, donde 0° es el mediodia solar
 
 #%%
 #Colector
-cltr_1 = mLFC.MiniLFCollector()
+clt = mLFC.MiniLFCollector()
 
-cltr_1.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
+clt.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
 
-
-#eff, T_f, x_f, h_transf, h = colector_1.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar")
+clt.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "n", corr="gungar")
 
 #%%
+int_factor=[]
 
-tmy_scl = pvlib.iotools.read_tmy3('OK_SCL.csv')
-
-for i in range(tmy_scl[0].shape[0]):
+for i in range(18):
+    print (i*5)
+    theta_sol = np.radians(i*5)
+    #clt.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "n", corr="gungar")
+    theta_L = np.cos(theta_sol) - (alt_col/L)*np.sin(theta_sol)
+    int_factor.append(theta_L)
     
-    DNI = tmy_scl[0]['DNI'][i]
-    T_amb = tmy_scl[0]['DryBulb'][i]
-    v_wind = tmy_scl[0]['Wspd'][i]
