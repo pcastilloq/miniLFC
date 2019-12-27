@@ -6,7 +6,6 @@ Created on Mon Dec  2 22:45:18 2019
 """
 import numpy as np
 import MiniLFCollector as mLFC
-import pvlib 
 import matplotlib.pyplot as plt
 
 #%%   Creacion del objeto Colector
@@ -17,7 +16,7 @@ W = 7.5
 N_m = 11
 w_m = 0.50
 alt_col = 4.5
-L = 12
+L = 65
 
 
 #Diseño receptor
@@ -45,19 +44,19 @@ e_mc    = 0.3/1000           #espesor de minicanales. Metro
 
 
 #Condiciones de operación
-DNI = 900              #Radiacion Solar[W/m2]
+DNI = 400              #Radiacion Solar[W/m2]
 v_wind = 7              #Velocidad del viento [m/s]
 T_amb = 273.15 + 30     #Temp. ambiente
 
 #.......Condiciones de Operación
 #Condiciones de Entrada
-P_in = 0.2        #Presion entrada [MPa] 
-m_in = 0.1    # equivalente a Re=2300   0.07 = 250
+P_in = 2.8        #Presion entrada [MPa] 
+m_in = 0.2    # equivalente a Re=2300   0.07 = 250
 T_in = 273.15 + 90
 
 
 #Angulo del sol
-theta_sol = 0           #Angulo del sol en grados, donde 0° es el mediodia solar
+theta_sol = 45           #Angulo del sol en grados, donde 0° es el mediodia solar
 
 #%%
 #Colector
@@ -66,6 +65,9 @@ clt = mLFC.MiniLFCollector()
 clt.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
 
 clt.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "n", corr="gungar")
+
+t_f = clt.T_fl
+q_loss = clt.Q_loss
 
 #%%
 int_factor=[]

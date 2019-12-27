@@ -298,8 +298,6 @@ class MiniLFCollector:
 
     def rotacionEspejos(self, theta_sol):
         
-
-        
         surface = self.surface
         mir_center = self.centros
         gamma_0 = self.inclinacion        
@@ -608,7 +606,7 @@ class MiniLFCollector:
         return h
 
 
-    def simulacion_thermal(self, corr, N = 50):
+    def simulacion_thermal(self, corr, N = 100):
         
         #Geometria y C.Inicial heredadas
         w_tot = self.dim_abs
@@ -788,7 +786,7 @@ class MiniLFCollector:
             Q_loss_tot = Q_loss_amb_t + Q_loss_air_t
             Q_util_t = Q_util_t + Q_cu_0
                    
-            
+        self.x_vap = x    
         self.T_fl = np.add(T_fl, -273.15)
         self.T_p_ext = np.add(T_p_ext, -273.15)
         self.T_p_int = np.add(T_p_int, -273.15)
@@ -799,7 +797,6 @@ class MiniLFCollector:
         self.eff_th= self.Q_th/(Q_in_o*L)
         
         print ('La eficiencia del concentrador es de', np.round((self.eff_th),4),)
-        
 
 
     def simulacion(self, theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar"):
