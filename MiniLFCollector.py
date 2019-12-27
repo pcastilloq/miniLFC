@@ -118,7 +118,7 @@ class MiniLFCollector:
 
 
     def GeometriaMinicanal(self, w_port, h_port, e):
-        w_tot        = self.dim_abs                      #Ancho total de la placa
+        w_tot        = self.dim_abs/1000                      #Ancho total de la placa
         self.w_port  = w_port
         self.h_port  = h_port
         self.e_mc    = e
@@ -292,12 +292,13 @@ class MiniLFCollector:
         fig = plt.figure()
         for key in self.surface:
             plt.plot(self.surface[key].xplot, self.surface[key].yplot)
-
         
         plt.show()    
         ### Ahora hay que hacer el raytracing
 
     def rotacionEspejos(self, theta_sol):
+        
+
         
         surface = self.surface
         mir_center = self.centros
@@ -335,6 +336,10 @@ class MiniLFCollector:
         
         surface = self.surface
         
+        index_abs = (self.N_m + (len(self.receptor)-1))*4 + 1
+        surface['surf_'+str(index_abs)].ray_abs = 0
+        
+        
         W = self.ancho
         N_m = len(self.centros)
         w_m = self.w_m
@@ -345,7 +350,6 @@ class MiniLFCollector:
         amount = self.amount
         id0 = self.id0
         lados = self.lados
-        
         
         #Se calcula el offset en X, cuan corrido esta el plano de proyeccion
         if theta_sol == 0:
@@ -604,7 +608,7 @@ class MiniLFCollector:
         return h
 
 
-    def simulacion_thermal(self, corr ,N = 50):
+    def simulacion_thermal(self, corr, N = 50):
         
         #Geometria y C.Inicial heredadas
         w_tot = self.dim_abs
@@ -647,9 +651,9 @@ class MiniLFCollector:
         a_cu = 0.94                 #Absortividad de la tuberia. Coating
         eps_abs = 0.12              #emisividad del absorbedor. Coating.      
         
-        e_cov = 0.10                #espacio entre vidrio y minicanal 
+        e_cov = 0.20                #espacio entre vidrio y minicanal 
         eps_cov = 0.85              #Emisividad del vidrio
-        tau_cov = 0.95             #transmisividad del vidrio
+        tau_cov = 0.95              #transmisividad del vidrio
         rho_cov = 0.08              #reflectividad del vidrio
         
         trans = tau_cov*a_cu/(1-(1-a_cu)*rho_cov)           #transmision del vidrio y absorcion
@@ -769,6 +773,7 @@ class MiniLFCollector:
                 h_rad_air = sigma*(np.float_power(T_p_ext_o,2) + np.float_power(T_cov_o,2))*(T_p_ext_o + T_cov_o)/((1/eps_cov)+(1/eps_abs)-1)
                 T_cov_o = (Q_in*(1-trans) + ((self.h_wind+h_rad_amb)*T_amb + (h_air_o+h_rad_air)*T_p_ext_o)*A_dif)/((self.h_wind + h_air_o + h_rad_amb + h_rad_air)*A_dif)
         #        print ('La temperatura del vidrio es ', T_cov_o)
+            
             Q_u[z] = Q_cu_0    
             T_fl[z+1] = T_c
             T_p_ext[z+1]=T_p_ext_o
@@ -784,16 +789,17 @@ class MiniLFCollector:
             Q_util_t = Q_util_t + Q_cu_0
                    
             
-        T_fl=np.add(T_fl, -273.15)
-        T_p_ext=np.add(T_p_ext, -273.15)
-        T_p_int=np.add(T_p_int, -273.15)
-        T_cov=np.add(T_cov, -273.15)
+        self.T_fl = np.add(T_fl, -273.15)
+        self.T_p_ext = np.add(T_p_ext, -273.15)
+        self.T_p_int = np.add(T_p_int, -273.15)
+        self.T_cov = np.add(T_cov, -273.15)
         
-        Q_util = m_in*(h[N] - h[0])*1000
-        eficiencia = Q_util/(Q_in_o*L)
-        print ('La eficiencia del concentrador es de', np.round((eficiencia*100),2), '%')
+        self.Q_th = m_in*(h[N] - h[0])*1000
+        self.Q_loss = Q_in_o - Q_u/(L/N)
+        self.eff_th= self.Q_th/(Q_in_o*L)
         
-        return eficiencia, T_fl, x, coef_trans, h
+        print ('La eficiencia del concentrador es de', np.round((self.eff_th),4),)
+        
 
 
     def simulacion(self, theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar"):
@@ -804,6 +810,5 @@ class MiniLFCollector:
         #Se setean las condiciones iniciales
         self.CondInicial(DNI, v_wind, T_amb, T_in, P_in, m_in)
         #por ultimo se simula la parte termica
-        eficiencia, T_fl, x, coef_trans, h = self.simulacion_thermal(corr)
+        self.simulacion_thermal(corr)
 
-        return eficiencia, T_fl, x, coef_trans, h
