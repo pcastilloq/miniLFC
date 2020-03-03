@@ -638,6 +638,7 @@ class MiniLFCollector:
         x = np.zeros(N+1)
         h = np.zeros(N+1)
         Q_u = np.zeros(N)
+        Q_loss = np.zeros(N)
         coef_trans = np.zeros(N)
         
         #Temporal. Propiedades del Aire
@@ -780,10 +781,11 @@ class MiniLFCollector:
             x[z+1] = x_f_2
             h[z+1] = h_c
             coef_trans[z] = h_trans
+            Q_loss[z] = Q_conv_amb + Q_rad_amb - (Q_conv_air + Q_rad_air)
             
-            Q_loss_amb_t= Q_loss_amb_t + Q_conv_amb + Q_rad_amb
-            Q_loss_air_t= Q_loss_air_t + (Q_conv_air + Q_rad_air)
-            Q_loss_tot = Q_loss_amb_t + Q_loss_air_t
+            #Q_loss_amb_t= Q_loss_amb_t + Q_conv_amb + Q_rad_amb
+            #Q_loss_air_t= Q_loss_air_t + (Q_conv_air + Q_rad_air)
+            #Q_loss_tot = Q_loss_amb_t + Q_loss_air_t
             Q_util_t = Q_util_t + Q_cu_0
                    
         self.x_vap = x    
@@ -791,9 +793,9 @@ class MiniLFCollector:
         self.T_p_ext = np.add(T_p_ext, -273.15)
         self.T_p_int = np.add(T_p_int, -273.15)
         self.T_cov = np.add(T_cov, -273.15)
-        
+        self.Q_loss = Q_loss
         self.Q_th = m_in*(h[N] - h[0])*1000
-        self.Q_loss = Q_in_o - Q_u/(L/N)
+        #self.Q_loss = Q_in_o - Q_u/(L/N)
         self.eff_th= self.Q_th/(Q_in_o*L)
         
         print ('La eficiencia del concentrador es de', np.round((self.eff_th),4),)
