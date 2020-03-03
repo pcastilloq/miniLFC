@@ -44,15 +44,15 @@ e_mc    = 0.3/1000           #espesor de minicanales. Metro
 
 
 #Condiciones de operación
-DNI = 400              #Radiacion Solar[W/m2]
+DNI = 50              #Radiacion Solar[W/m2]
 v_wind = 7              #Velocidad del viento [m/s]
-T_amb = 273.15 + 30     #Temp. ambiente
+T_amb = 273.15 + 20     #Temp. ambiente
 
 #.......Condiciones de Operación
 #Condiciones de Entrada
 P_in = 2.8        #Presion entrada [MPa] 
 m_in = 0.2    # equivalente a Re=2300   0.07 = 250
-T_in = 273.15 + 90
+T_in = 273.15 + 20
 
 
 #Angulo del sol
@@ -70,12 +70,12 @@ t_f = clt.T_fl
 q_loss = clt.Q_loss
 
 #%%
-int_factor=[]
-
-for i in range(18):
-    print (i*5)
-    theta_sol = np.radians(i*5)
-    #clt.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "n", corr="gungar")
-    theta_L = np.cos(theta_sol) - (alt_col/L)*np.sin(theta_sol)
-    int_factor.append(theta_L)
-    
+#int_factor=[]
+#
+#for i in range(18):
+#    print (i*5)
+#    theta_sol = np.radians(i*5)
+#    #clt.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "n", corr="gungar")
+#    theta_L = np.cos(theta_sol) - (alt_col/L)*np.sin(theta_sol)
+#    int_factor.append(theta_L)
+#    
