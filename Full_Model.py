@@ -685,7 +685,7 @@ class MiniLFCollector:
             h_f = h_in + (Q_in/self.m_in)/1000               #Entalpia estimada final del tramo
             est_out_o = IAPWS(P=self.P_in, h=h_f)            #Estado estimado final del tramo 1 
         
-            T_a = T_amb
+            T_a = 274
             h_a = IAPWS(T=T_a, x = 0).h
             T_b = est_out_o.T
             h_b = h_f
@@ -709,7 +709,7 @@ class MiniLFCollector:
             
             T_cov_o = (Q_in*(1-trans) + (self.h_wind*T_amb + h_air_o*T_p_ext_o)*A_dif)/((self.h_wind + h_air_o)*A_dif)
             
-            while (h_b - h_a) > (0.01/N):
+            while abs(h_b - h_a) > (0.1/N):
                 #Perdida de calor del cover al ambiente
                 Q_conv_amb = self.h_wind*(T_cov_o - T_amb)*A_dif
                 Q_rad_amb = eps_cov*sigma*(np.float_power(T_cov_o,4) - np.float_power(T_sky,4))*A_dif
@@ -850,7 +850,7 @@ T_amb = 273.15 + 30     #Temp. ambiente
 #Condiciones de Entrada
 P_in = 0.2        #Presion entrada [MPa] 
 m_in = 0.1    # equivalente a Re=2300   0.07 = 250
-T_in = 273.15 + 90
+T_in = 273.15 + 30
 
 
 #Angulo del sol
