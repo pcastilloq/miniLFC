@@ -44,7 +44,7 @@ e_mc    = 0.3/1000           #espesor de minicanales. Metro
 
 
 #Condiciones de operación
-DNI = 300              #Radiacion Solar[W/m2]
+DNI = 600              #Radiacion Solar[W/m2]
 
 v_wind = 7              #Velocidad del viento [m/s]
 T_amb = 273.15 + 20     #Temp. ambiente

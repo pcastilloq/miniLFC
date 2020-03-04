@@ -781,7 +781,7 @@ class MiniLFCollector:
             x[z+1] = x_f_2
             h[z+1] = h_c
             coef_trans[z] = h_trans
-            Q_loss[z] = Q_conv_amb + Q_rad_amb - (Q_conv_air + Q_rad_air)
+            Q_loss[z] = Q_conv_amb + Q_rad_amb
             
             #Q_loss_amb_t= Q_loss_amb_t + Q_conv_amb + Q_rad_amb
             #Q_loss_air_t= Q_loss_air_t + (Q_conv_air + Q_rad_air)
