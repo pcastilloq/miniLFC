@@ -615,7 +615,7 @@ class MiniLFCollector:
         T_amb = self.T_amb
         P_port = self.P_port
         N_port = self.N_port        
-        T_sky = 0.5*np.float_power((T_amb - 273.15),1.5) + 273.15
+        T_sky = T_amb                   #Temperatura de cielo se cambia por temperatura ambiente.
         D_h = self.D_h
         m_in = self.m_in
         e_mc = self.e_mc
@@ -635,10 +635,14 @@ class MiniLFCollector:
         T_p_ext = np.zeros(N+1)
         T_p_int = np.zeros(N+1)
         T_cov = np.zeros(N+1)
+        T_air = np.zeros(N+1)   #Temperatura del aire al interior
         x = np.zeros(N+1)
         h = np.zeros(N+1)
         Q_u = np.zeros(N)
-        Q_loss = np.zeros(N)
+        Q_loss0 = np.zeros(N)
+        Q_loss1 = np.zeros(N)
+        Q_loss2 = np.zeros(N)
+        Q_loss3 = np.zeros(N)
         coef_trans = np.zeros(N)
         
         #Temporal. Propiedades del Aire
@@ -647,7 +651,7 @@ class MiniLFCollector:
     
         #Propiedades del absorbedor
         k_cu = 400                  # conductividad cobre. 400 [W/mK]
-        a_cu = 0.94                 #Absortividad de la tuberia. Coating
+        a_cu = 0.95                 #Absortividad de la tuberia. Coating
         eps_abs = 0.12              #emisividad del absorbedor. Coating.      
         
         e_cov = 0.20                #espacio entre vidrio y minicanal 
@@ -656,18 +660,17 @@ class MiniLFCollector:
         rho_cov = 0.08              #reflectividad del vidrio
         
         trans = tau_cov*a_cu/(1-(1-a_cu)*rho_cov)           #transmision del vidrio y absorcion
-        sigma = 5.6*np.float_power(10,(-8))     # Constante de Stefan-Boltzmann. [W/m2K4]
+        sigma = 5.6*np.float_power(10,(-8))                 # Constante de Stefan-Boltzmann. [W/m2K4]
         
         #Integradores de Calor
-        Q_loss_amb_t= 0
-        Q_loss_air_t= 0
-        Q_util_t = 0
+        #Q_util_t = 0
     
         #Condicion de borde
         T_fl[0]= T_in                   #temperatura del fluido al inicio
         T_p_ext[0] = T_in               #temperatura de pared exterior
         T_p_int[0] = T_in               #temperatura de pared interior
         T_cov[0]= T_amb + (T_in-273)    #temperatura del cover (vidrio)
+        T_air 
         x[0] = x_0
         h[0] = h_0
         
@@ -680,12 +683,12 @@ class MiniLFCollector:
         #    else:
             est_ini = IAPWS(T=T_fl[z], P= self.P_in)          #Estado liquido del tramo
             h_in = h[z]
-            k = est_ini.k
+            k = est_ini.k                                   #Conductividad termica del fluido
             Pr = est_ini.Prandt
             if x[z] == 1:
                 self.Re = G*D_h/est_ini.mu
                 
-            h_f = h_in + (Q_in/self.m_in)/1000               #Entalpia estimada final del tramo
+            h_f = h_in + (Q_in/self.m_in)/1000               #Entalpia estimada final del tramo (entalpia en kJ/kg)
             est_out_o = IAPWS(P=self.P_in, h=h_f)            #Estado estimado final del tramo 1 
         
             T_a = T_amb
@@ -702,15 +705,16 @@ class MiniLFCollector:
             h_trans = self.CoefTrans(Pr, k, x[z], st_v.rho, st_l.rho, Q_in/A_dif, G, h_lv, self.P_in, corr)        
             #Coef Transf Calor Liquid Only
                             
-            R_cu = (e_mc)/(k_cu*(P_port*N_port*(L/N)))                                      #Resistencia cobre
+            R_cu = (e_mc)/(k_cu*(P_port*N_port*(L/N)))                      #Resistencia cobre
             R_fl = 1/(h_trans*P_port*(L/N)*N_port)                          #Resistencia flujo
-            R_t = R_cu + R_fl                                               #Resistencia total
+            R_t = R_cu + R_fl                                               #Resistencia total   #REVISAR DESPUES
             
             T_p_ext_o = Q_in*trans*R_t  + T_c                         #Temperatura tuberia exterior inicial
             Ra_o = 100000
             h_air_o = self.CoefTransAir(Ra_o, k_air, e_cov)
             
-            T_cov_o = (Q_in*(1-trans) + (self.h_wind*T_amb + h_air_o*T_p_ext_o)*A_dif)/((self.h_wind + h_air_o)*A_dif)
+            #Estimacion de la temperatura del vidrio sin considerar radiacion 
+            T_cov_o = (Q_in*(1-trans) + (self.h_wind*T_amb + h_air_o*T_p_ext_o)*A_dif)/((self.h_wind + h_air_o)*A_dif) 
             
             while (h_b - h_a) > (0.01/N):
                 #Perdida de calor del cover al ambiente
@@ -781,24 +785,28 @@ class MiniLFCollector:
             x[z+1] = x_f_2
             h[z+1] = h_c
             coef_trans[z] = h_trans
-            Q_loss[z] = Q_conv_amb + Q_rad_amb
+            Q_loss0[z] = Q_conv_amb
+            Q_loss1[z] = Q_rad_amb
+            Q_loss2[z] = Q_conv_air
+            Q_loss3[z] = Q_rad_air
             
             #Q_loss_amb_t= Q_loss_amb_t + Q_conv_amb + Q_rad_amb
             #Q_loss_air_t= Q_loss_air_t + (Q_conv_air + Q_rad_air)
             #Q_loss_tot = Q_loss_amb_t + Q_loss_air_t
-            Q_util_t = Q_util_t + Q_cu_0
+            #Q_util_t = Q_util_t + Q_cu_0
                    
         self.x_vap = x    
         self.T_fl = np.add(T_fl, -273.15)
         self.T_p_ext = np.add(T_p_ext, -273.15)
         self.T_p_int = np.add(T_p_int, -273.15)
         self.T_cov = np.add(T_cov, -273.15)
-        self.Q_loss = Q_loss
+        self.Q_loss = [Q_loss0, Q_loss1, Q_loss2, Q_loss3]  
         self.Q_th = m_in*(h[N] - h[0])*1000
+        self.Q_mini = Q_u
         #self.Q_loss = Q_in_o - Q_u/(L/N)
-        self.eff_th= self.Q_th/(Q_in_o*L)
+        self.eff_th= self.Q_th/(Q_in_o*L*trans)
         
-        print ('La eficiencia del concentrador es de', np.round((self.eff_th),4),)
+        print ('La eficiencia termica del receptor es de', np.round((self.eff_th),4),)
 
 
     def simulacion(self, theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "y", corr="gungar"):

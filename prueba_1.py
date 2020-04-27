@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
     
 #Diseño concentrador
 #dimensiones en metros
-W = 7.5
-N_m = 11
+W = 6.4
+N_m = 9
 w_m = 0.50
 alt_col = 4.5
 L = 65
@@ -44,21 +44,21 @@ e_mc    = 0.3/1000           #espesor de minicanales. Metro
 
 
 #Condiciones de operación
-DNI = 600              #Radiacion Solar[W/m2]
+DNI = 750              #Radiacion Solar[W/m2]
 
-v_wind = 7              #Velocidad del viento [m/s]
-T_amb = 273.15 + 20     #Temp. ambiente
+v_wind = 2              #Velocidad del viento [m/s]
+T_amb = 273.15 + 25      #Temp. ambiente
 
 #.......Condiciones de Operación
 #Condiciones de Entrada
-P_in = 2.8        #Presion entrada [MPa] 
-m_in = 0.2    # equivalente a Re=2300   0.07 = 250
-T_in = 273.15 + 20
+P_in = 4.0        #Presion entrada [MPa] 
+m_in = 0.7    # equivalente a Re=2300   0.07 = 250
+T_in = 273.15 + 80 
 
 
 
 #Angulo del sol
-theta_sol = 45           #Angulo del sol en grados, donde 0° es el mediodia solar
+theta_sol = 10           #Angulo del sol en grados, donde 0° es el mediodia solar
 
 #%%
 #Colector
