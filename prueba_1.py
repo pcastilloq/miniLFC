@@ -16,7 +16,7 @@ W = 6.4
 N_m = 9
 w_m = 0.50
 alt_col = 4.5
-L = 65
+L = 100
 
 
 #Diseño receptor
@@ -46,14 +46,14 @@ e_mc    = 0.3/1000           #espesor de minicanales. Metro
 #Condiciones de operación
 DNI = 750              #Radiacion Solar[W/m2]
 
-v_wind = 2              #Velocidad del viento [m/s]
+v_wind = 1              #Velocidad del viento [m/s]
 T_amb = 273.15 + 25      #Temp. ambiente
 
 #.......Condiciones de Operación
 #Condiciones de Entrada
 P_in = 4.0        #Presion entrada [MPa] 
 m_in = 0.7    # equivalente a Re=2300   0.07 = 250
-T_in = 273.15 + 80 
+T_in = 273.15 + 175 
 
 
 
