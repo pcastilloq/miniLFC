@@ -8,19 +8,23 @@ import numpy as np
 import MiniLFCollector as mLFC
 import matplotlib.pyplot as plt
 
-#%%   Creacion del objeto Colector
+#%%   Definicion de las variables y parametros del colector.
     
 #Diseño concentrador
 #dimensiones en metros
-W = 6.4
-N_m = 9
-w_m = 0.50
-alt_col = 4.5
-L = 100
+W = 6.4                 #Ancho W
+N_m = 9                 #Numero de Espejos, n
+w_m = 0.50              #Ancho de cada espejo, w_m
+alt_col = 4.5           #Altura del colector, a (hasta base del receptor)
+L = 100                 #Largo del colector, L
 
 
 #Diseño receptor
-#Tomando como referencia el 0,0 en la esquina inf izq del receptor
+
+#El receptor esta formado por cuatro puntos, los cuales cierran un cuadrilatero.
+#La referencia es el 0,0 en la esquina inferior izquierda del receptor. 
+
+
 p1 = np.array([0, 0])
 p2 = np.array([0.125*w_m*1000, 250])
 #p5 = np.array([5, 60])
@@ -30,54 +34,50 @@ p4 = np.array([1.2*w_m*1000, 0])
 coord_recep = np.array([p1,p2,p3,p4])
 
 #Descripción de Absorbedor
-#tomando como referencia el 0,0 en el punto medio del lado inferior del receptor
+#El absorbedor corresponde al tubo de minicanales
+#Referencia: el 0,0 está en el punto medio del lado inferior del receptor. 
+
 dim_abs = 470                       #dimension: ancho en caso de placa, radio del tubo. dimension en mm.
 origen_abs = np.array([[0,240]])    #arreglo con origen de los absorbedores 
 
 #Thermal geometry
-w_port  = 2.5/1000                  #Ancho de minicanales. Metro
-h_port  = 2/1000            #Altura de minicanales. Metro
-e_mc    = 0.3/1000           #espesor de minicanales. Metro
+w_port  = 2.5/1000                  #Ancho de minicanales. Metros
+h_port  = 2/1000                    #Altura de minicanales. Metros
+e_mc    = 0.3/1000                  #Espesor de minicanales. Metros
 
 
-## Todo lo de arriba es fijo. Diseño. 
+## Todo lo de arriba es fijo. Diseño/Construcción del Colector. 
 
 
-#Condiciones de operación
-DNI = 750              #Radiacion Solar[W/m2]
+#.......Condiciones de ambientales
 
-v_wind = 1              #Velocidad del viento [m/s]
-T_amb = 273.15 + 25      #Temp. ambiente
+DNI = 750                       #Radiacion Solar[W/m2]
+v_wind = 1                      #Velocidad del viento [m/s]
+T_amb = 273.15 + 25             #Temp. ambiente (kelvin)
+theta_sol = 10                  #Angulo del sol en grados, donde 0° es el mediodia solar.
 
 #.......Condiciones de Operación
+
 #Condiciones de Entrada
-P_in = 4.0        #Presion entrada [MPa] 
-m_in = 0.7    # equivalente a Re=2300   0.07 = 250
-T_in = 273.15 + 175 
+P_in = 4.0                          #Presion entrada [MPa] 
+m_in = 0.7                          #Flujo masico en (kg/s)equivalente a Re=2300   0.07 = 250
+T_in = 273.15 + 175                 #Temperatura de Entrada en Kelvin
 
-
-
-#Angulo del sol
-theta_sol = 10           #Angulo del sol en grados, donde 0° es el mediodia solar
 
 #%%
-#Colector
+#Ejemplo Colector
+
+#Se crea un Objeto tipo MiniLFCollector. Esta vacio, no tiene parametros. 
 clt = mLFC.MiniLFCollector()
 
+#Se utiliza el metodo Contruccion para asignarle valores a los parametros de diseño del colector.
 clt.construccion(W, w_m, N_m, alt_col, L, coord_recep, dim_abs, origen_abs, w_port, h_port, e_mc)
 
+#Se utiliza el metodo Simulacion para simular optica y termicamente el colector con las variables entregadas.
 clt.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "n", corr="gungar")
 
+#Ejemplo de la temperatura final del liquido y la perdidas termicas del colector.
 t_f = clt.T_fl
 q_loss = clt.Q_loss
 
-#%%
-#int_factor=[]
-#
-#for i in range(18):
-#    print (i*5)
-#    theta_sol = np.radians(i*5)
-#    #clt.simulacion(theta_sol, DNI, v_wind, T_amb, T_in, P_in, m_in, plot = "n", corr="gungar")
-#    theta_L = np.cos(theta_sol) - (alt_col/L)*np.sin(theta_sol)
-#    int_factor.append(theta_L)
 
